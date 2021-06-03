@@ -1,10 +1,22 @@
 #!/bin/bash
 
+#VARIABLES DATOS ALFANUMÉRICOS
 Fecha=$(date +"%d-%b")
 Argumento=$1
 declare -a Dependencias=("zoom" "code" "git")
 defaultDir="./archivos-clase"
+defaultConfig="./.nueva-clase.conf"
 Commit="Nada que comentar"
+
+#VARIABLES GRÁFICAS
+Verde="32"
+Magenta="95"
+VerdeBold="\e[1;${Verde}m"
+MagentaBold="\e[1;${Magenta}"
+FinColor="\e[0m"
+Correcto="$VerdeBold Correcto :) $FinColor"
+Error="$MagentaBold Error :( $FinColor"
+
 
 checkArgumentos() {
 
@@ -30,10 +42,10 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
         # check if command exists and fail otherwise
         command -v "$1" >/dev/null 2>&1
         if [[ $? -ne 0 ]]; then
-            echo "$1 no está instalado. Fallo."
+            echo -e "$1 no está instalado. $Error."
             Apto=false
         else
-            echo "$1 está instalado. correcto"
+            echo -e "$1 está instalado. $Correcto"
         fi
 
     }
@@ -45,10 +57,10 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
     echo ""
 
     if $Apto; then
-        echo "Las dependencias están satisfechas. Correcto :)"
+        echo -e "Las dependencias están satisfechas. $Correcto "
         echo ""
     else
-        echo "Las dependencias no están satisfechas. Instala las aplicaciones pertinentes :("
+        echo -e "Las dependencias no están satisfechas. Instala las aplicaciones pertinentes  $Error"
         echo ""
         exit
     fi
@@ -56,14 +68,14 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
 
 checkExisteConfig() { #Función que comprueba si existe el archivo nueva-clase.conf.
 
-    if [ -f "./nueva-clase.conf" ]; then #Si ya existe el archivo de configuración, lo más común es que sea innecesario configurarlo.
-        echo "Encontrado archivo de configuración en el directorio actual :)"
-        echo ""
+    if [ -f "$defaultConfig" ]; then #Si ya existe el archivo de configuración, lo más común es que sea innecesario configurarlo.
+        echo -e "Encontrado archivo de configuración en el directorio actual. $Correcto"
+     
 
     else
 
-        echo "No se ha encontrado archivo de configuración en el directorio local. Para que el script funcione es necesario crearlo y almacenar en él la ruta donde serán guardados los archivos de clase"
-        echo ""
+        echo "No se ha encontrado archivo de configuración en el directorio local. $Error"
+        echo "Para que el script funcione es necesario crearlo y almacenar en él la ruta donde serán guardados los archivos de clase"
         modificarConfig
     fi
 
@@ -74,18 +86,15 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
     checkDirectorioClase() {
 
         if [ -z "$directorioClases" ]; then
-            echo "no existe un directorio para los archivos de clase registrado en el archivo de configuración. :("
+            echo -e "no existe un directorio para los archivos de clase registrado en el archivo de configuración.  $Error"
             echo "Para configurar/crear un directorio de clases nuevo, accede a la ayuda."
-            echo ""
             exit
         #Si el directorio está registrado y existe, el script continua su función
         elif [ -d "$directorioClases" ]; then
-            echo "El directorio $directorioClases está configurado como archivo de clases. Correcto :)"
-            echo ""
+            echo -e "El directorio $directorioClases está configurado como archivo de clases. $Correcto "
         #Si nada de lo anterior se cumple, entonces pasa que el directorio registrado en la configuración ya no existe en la ruta especificada.
         else
-            echo "El directorio guardado en la configuración de este script ($directorioClases) ya no existe o ha sido modificado. :("
-            echo ""
+            echo -e "El directorio guardado en la configuración de este script ($directorioClases) ya no existe o ha sido modificado $Error"
             echo "Para configurar/crear un directorio de clases nuevo, utiliza la ayuda"
             exit
         fi
@@ -94,42 +103,40 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
     checkIdZoom() {
 
         if [ -z "$idZoom" ]; then
-            echo "no existe un id de Zoom registrado en el archivo de configuración. :("
+            echo -e "no existe un id de Zoom registrado en el archivo de configuración.$Error"
             echo "Para configurarlo accede a la ayuda."
-            echo ""
             exit
         else
-            echo "El id de Zoom $idZoom está configurado como archivo de clases. Correcto :)"
-            echo ""
+            echo -e "El id de Zoom $idZoom está configurado como archivo de clases. $Correcto"
         fi
     }
 
     checkDatosGit() {
 
         if [ -z "$urlRemote" ]; then
-            echo "no existe una url de repositorio remoto registrada en el archivo de configuración. :("
+            echo -e "no existe una url de repositorio remoto registrada en el archivo de configuración. $Error"
             echo "Para configurar una nueva url, accede a la ayuda."
             echo ""
             exit
 
         else
-            echo "La url "$urlRemote" está registrada en el archivo de configuración. correcto :)"
+            echo -e "La url "$urlRemote" está registrada en el archivo de configuración. $Correcto"
             echo ""
         fi
 
         if [ -z "$usuarioRemote" ]; then
-            echo "no existe un usuario de repositorio remoto registrado en el archivo de configuración. :("
+            echo -e "no existe un usuario de repositorio remoto registrado en el archivo de configuración. $Error"
             echo "Para configurar un nuevo usuario, accede a la ayuda."
             echo ""
             exit
 
         else
-            echo "El usuario "$usuarioRemote" está registrado en el archivo de configuración. correcto :)"
+            echo -e "El usuario "$usuarioRemote" está registrado en el archivo de configuración. $Correcto"
             echo ""
         fi
     }
 
-    source ./nueva-clase.conf #Leemos el archivo de configuración que contiene las variables.
+    source $defaultConfig #Leemos el archivo de configuración que contiene las variables.
     checkDirectorioClase
     checkIdZoom
     checkDatosGit
@@ -143,7 +150,7 @@ modificarConfig() { #Versión más modular y limpia
     # - directorio para las clases.
     # - id del meeting Zoom.
     # - url del repositorio remoto
-    # - usuario del repositorio remoto
+    # - usuario del repositorio remoto----eliminado por ser innecesario
 
     escribirDirectorioClase() {
 
@@ -160,7 +167,7 @@ modificarConfig() { #Versión más modular y limpia
             read -p 'Escribe S para confirmar o no escribas nada para cancelar: ' respuesta
             echo ""
             if [ "$respuesta" == "S" ]; then
-                echo -e "directorioClases="$directorioClases"\n" >./nueva-clase.conf
+                echo -e "directorioClases="$directorioClases"\n" >$defaultConfig
                 echo "creando directorio especificado y guardando su ruta en el archivo de configuración."
                 echo ""
             else
@@ -171,13 +178,13 @@ modificarConfig() { #Versión más modular y limpia
 
             directorioClases="$defaultDir"
             mkdir "$directorioClases"
-            echo -e "directorioClases="$directorioClases"\n" >./nueva-clase.conf
+            echo -e "directorioClases="$directorioClases"\n" >$defaultConfig
             echo "directorio por defecto creado ( "$directorioClases")."
             echo ""
         else
 
             mkdir "$directorioClases"
-            echo -e "directorioClases="$directorioClases"\n" >./nueva-clase.conf
+            echo -e "directorioClases="$directorioClases"\n" >$defaultConfig
             echo "creando directorio especificado y guardando su ruta en el archivo de configuración."
             echo ""
         fi
@@ -192,7 +199,7 @@ modificarConfig() { #Versión más modular y limpia
             echo "id no válido."
             escribirIdZoom
         else
-            echo -e "idZoom="$idZoom"\n" >>./nueva-clase.conf
+            echo -e "idZoom="$idZoom"\n" >>$defaultConfig
         fi
     }
 
@@ -205,22 +212,18 @@ modificarConfig() { #Versión más modular y limpia
         echo "introduce el enlace al repositorio remoto en donde desees almacenar tus archivos de clase"
         echo ""
         read -p 'url del repositorio: ' urlRemote
-        echo "Introduce el nombre de usuario del repositorio remoto."
-        echo ""
-        read -p 'Usuario: ' usuarioRemote
         echo ""
 
         git -C "$directorioClases" remote add origin "$urlRemote"
 
-        echo -e "urlRemote="$urlRemote"\n" >>./nueva-clase.conf #Escribimos variables en archivo de configuración.
-        echo -e "usuarioRemote="$usuarioRemote"\n" >>./nueva-clase.conf
+        echo -e "urlRemote="$urlRemote"\n" >>$defaultConfig #Escribimos variables en archivo de configuración.
     }
 
-    if [ -d "./nueva-clase.conf" ]; then
+    if [ -d "$defaultConfig" ]; then
         echo "Ya existe un archivo de configuración, si se modifica será primero eliminado"
-        rm ./nueva-clase.conf
+        rm $defaultConfig
     fi
-    touch nueva-clase.conf
+    touch "$defaultConfig"
     escribirDirectorioClase
     escribirIdZoom
     escribirDatosGit
@@ -254,24 +257,24 @@ comenzar() {
         touch "$directorioClases/Clase.$Fecha/apuntes.txt"
         touch "$directorioClases/Clase.$Fecha/log.txt"
         echo -e "La sesión "$clasesHoy" comenzó a las $(date +"%H:%M") del $(date +"%d-%b").\n" >"$directorioClases/Clase.$Fecha/log.txt"
-       #S code "$directorioClases/Clase.$Fecha"
+        #S code "$directorioClases/Clase.$Fecha"
 
-       # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+        # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
     else
         echo "Ya existe un archivo para hoy, estas seguro de que quieres realizar otra sesión?"
         echo ""
         read -p 'Escribe S para confirmar:  ' respuesta
         if [ "$respuesta" == "S" ]; then
             clasesHoy=$((clasesHoy + 1))
-            sed -i '/clasesHoy/d' ./nueva-clase.conf #borra la variable de config
-            echo -e "clasesHoy=$clasesHoy\n" >>./nueva-clase.conf
+            sed -i '/clasesHoy/d' $defaultConfig #borra la variable de config
+            echo -e "clasesHoy=$clasesHoy\n" >>$defaultConfig
             mkdir "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
             touch "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/apuntes.txt"
             touch "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
             echo "-La sesión "$clasesHoy" del $(date +"%d-%b") comenzó a las $(date +"%H:%M")." >>"$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
-           # code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
+            # code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
 
-           # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+            # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
         fi
     fi
 
@@ -284,7 +287,7 @@ finalizar() {
     checkExisteConfig
     checkVarConfig
 
-    if [ $clasesHoy > 0 ]; then #Escribe en el log la hora de finalización de la clase
+    if [ $clasesHoy -gt 0 ]; then #Escribe en el log la hora de finalización de la clase
 
         echo "-La sesión $clasesHoy del $(date +"%d-%b") finalizó a las $(date +"%H:%M")." >>"$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
 
@@ -312,6 +315,7 @@ ayuda() {
 }
 
 #-------------------------------------
+echo ""
 checkArgumentos
 exit
 #-------------------------------------
