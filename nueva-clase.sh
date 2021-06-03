@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/bin/
+
+#TODO
+#Almacenar en la configuración el estado del programa, para solo permitir la finalización despues de la inicialización ni permitir la configuración en mitad de una sesión
+#Añadir el argumento de Verbose y definir que mensajes son debug y cuales necesita el usuario.
 
 #VARIABLES DATOS ALFANUMÉRICOS
 Fecha=$(date +"%d-%b")
