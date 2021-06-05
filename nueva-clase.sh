@@ -1,4 +1,4 @@
-#!/bin/
+#!/bin/bash
 
 #TODO
 #Almacenar en la configuración el estado del programa, para solo permitir la finalización despues de la inicialización ni permitir la configuración en mitad de una sesión
@@ -11,16 +11,20 @@ declare -a Dependencias=("zoom" "code" "git")
 defaultDir="./archivos-clase"
 defaultConfig="./.nueva-clase.conf"
 Commit="Nada que comentar"
+EnSesion=false
 
 #VARIABLES GRÁFICAS
 Verde="32"
-Magenta="95"
-VerdeBold="\e[1;${Verde}m"
-MagentaBold="\e[1;${Magenta}"
-FinColor="\e[0m"
-Correcto="$VerdeBold Correcto :) $FinColor"
-Error="$MagentaBold Error :( $FinColor"
+Rojo="91"
+Cian="\e[96m"
+Magenta="\e[95m"
+Amarillo="\e[93m"
 
+VerdeBold="\e[1;${Verde}m"
+RojoBold="\e[1;${Rojo}m"
+FinColor="\e[0m"
+Correcto="$VerdeBold Correcto :) $FinColor" #Mensaje de debug correcto bold y en color verde.
+Error="$RojoBold Error :( $FinColor"        #Mensaje de debug error bold y en color rojo.
 
 checkArgumentos() {
 
@@ -74,13 +78,19 @@ checkExisteConfig() { #Función que comprueba si existe el archivo nueva-clase.c
 
     if [ -f "$defaultConfig" ]; then #Si ya existe el archivo de configuración, lo más común es que sea innecesario configurarlo.
         echo -e "Encontrado archivo de configuración en el directorio actual. $Correcto"
-     
+        source $defaultConfig #Leemos el archivo de configuración que contiene las variables
 
     else
 
-        echo "No se ha encontrado archivo de configuración en el directorio local. $Error"
-        echo "Para que el script funcione es necesario crearlo y almacenar en él la ruta donde serán guardados los archivos de clase"
-        modificarConfig
+        echo -e "No se ha encontrado archivo de configuración en el directorio local. $Error"
+        echo "Deseas crearlo ahora?"
+        read -p 'Escribe S para confirmar, escribe cualquier otra cosa para cancelar: ' respuesta
+        echo ""
+        if [ "$respuesta" == "S" ]; then
+            modificarConfig
+        else
+            exit
+        fi
     fi
 
 }
@@ -90,7 +100,7 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
     checkDirectorioClase() {
 
         if [ -z "$directorioClases" ]; then
-            echo -e "no existe un directorio para los archivos de clase registrado en el archivo de configuración.  $Error"
+            echo -e "no existe un directorio para los archivos de clase registrado en el archivo de configuración. $Error"
             echo "Para configurar/crear un directorio de clases nuevo, accede a la ayuda."
             exit
         #Si el directorio está registrado y existe, el script continua su función
@@ -125,17 +135,6 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
 
         else
             echo -e "La url "$urlRemote" está registrada en el archivo de configuración. $Correcto"
-            echo ""
-        fi
-
-        if [ -z "$usuarioRemote" ]; then
-            echo -e "no existe un usuario de repositorio remoto registrado en el archivo de configuración. $Error"
-            echo "Para configurar un nuevo usuario, accede a la ayuda."
-            echo ""
-            exit
-
-        else
-            echo -e "El usuario "$usuarioRemote" está registrado en el archivo de configuración. $Correcto"
             echo ""
         fi
     }
@@ -241,7 +240,7 @@ configurar() { #falta esto
     checkVarConfig
 }
 
-comenzar() {
+comenzar() { #Falta simplificar esta función
 
     #Comprueba dependencias y la configuración, para luego crear un directorio nombrado con la fecha actual y generar dentro de el un log y archivo de notas.
     #También abre esa carpeta en VS Code y se conecta al meeting de Zoom.
@@ -250,6 +249,15 @@ comenzar() {
 
     checkDependecias
     checkExisteConfig
+
+    #Comprobación de si el programa se encuentra en mitad de una sesión.
+    if [ $EnSesion == true]; then
+        echo " $Error Ya hay una sesión en curso, antes de comenzar otra usa el argumento finalizar para terminar la actual"
+        exit
+    fi
+    EnSesion=true
+    echo "EnSesion=true" >>$defaultConfig
+
     checkVarConfig
 
     if [ ! -d "$directorioClases/Clase.$Fecha" ]; then #Si en el directorio de clases no existe una carpeta para la fecha actual
@@ -261,9 +269,11 @@ comenzar() {
         touch "$directorioClases/Clase.$Fecha/apuntes.txt"
         touch "$directorioClases/Clase.$Fecha/log.txt"
         echo -e "La sesión "$clasesHoy" comenzó a las $(date +"%H:%M") del $(date +"%d-%b").\n" >"$directorioClases/Clase.$Fecha/log.txt"
-        #S code "$directorioClases/Clase.$Fecha"
 
-        # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+        #!!!!!!        #S code "$directorioClases/Clase.$Fecha"
+
+        #!!!!!!        # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+
     else
         echo "Ya existe un archivo para hoy, estas seguro de que quieres realizar otra sesión?"
         echo ""
@@ -276,9 +286,10 @@ comenzar() {
             touch "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/apuntes.txt"
             touch "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
             echo "-La sesión "$clasesHoy" del $(date +"%d-%b") comenzó a las $(date +"%H:%M")." >>"$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
-            # code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
 
-            # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+            #!!!!!!            # code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
+
+            #!!!!!!            # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
         fi
     fi
 
@@ -290,6 +301,13 @@ finalizar() {
     checkDependecias
     checkExisteConfig
     checkVarConfig
+
+    #Comprobación de si existe una sesión que finalizar.
+    if [ $EnSesion == false ]; then
+        echo -e " $Error No hay ninguna sesión que finalizar, Inicia una usando el argumento comenzar."
+        echo ""
+        exit
+    fi
 
     if [ $clasesHoy -gt 0 ]; then #Escribe en el log la hora de finalización de la clase
 
@@ -309,17 +327,29 @@ finalizar() {
 }
 
 ayuda() {
+    echo "Herramienta de automatización de sesiones de enseñanza en remoto"
     echo ""
-    echo "--------------------------------//NUEVA-CLASE.sh\\\--------------------------------"
-    echo "comenzar      -       Crea una carpeta fechada, genera un archivo para tomar apuntes dentro de esta y un log. Luego la abre en VS code, inicializa GIT y abre la sesión de Zoom"
+    echo "comenzar      -       Comienza la sesión crea una carpeta fechada, genera un archivo para tomar apuntes dentro de esta y un log."
+    echo "                      Luego la abre en VS code, inicializa GIT y abre la sesión de Zoom"
     echo "finalizar     -       Termina la sesión. Guarda los archivos y los sube al repositorio remoto."
     echo "configurar    -       Configura el script para su correcto funcionamiento."
     echo "ayuda         -       Muestra este menú."
     echo ""
 }
 
+banner() {
+
+    echo -e "$Cian███╗   ██╗██╗   ██╗███████╗██╗   ██╗ █████╗      ██████╗██╗      █████╗ ███████╗███████╗$FinColor"
+    echo -e "$Magenta████╗  ██║██║   ██║██╔════╝██║   ██║██╔══██╗    ██╔════╝██║     ██╔══██╗██╔════╝██╔════╝$FinColor"
+    echo -e "$Amarillo██╔██╗ ██║██║   ██║█████╗  ██║   ██║███████║    ██║     ██║     ███████║███████╗█████╗$FinColor"
+    echo -e "$Magenta██║╚██╗██║██║   ██║██╔══╝  ╚██╗ ██╔╝██╔══██║    ██║     ██║     ██╔══██║╚════██║██╔══╝ $FinColor"
+    echo -e "$Cian██║ ╚████║╚██████╔╝███████╗ ╚████╔╝ ██║  ██║    ╚██████╗███████╗██║  ██║███████║███████╗$FinColor"
+    echo -e "$Amarillo╚═╝  ╚═══╝ ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝$FinColor"
+}
+
 #-------------------------------------
 echo ""
+banner
 checkArgumentos
 exit
 #-------------------------------------
