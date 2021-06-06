@@ -20,10 +20,10 @@ chmod +x nueva-clase.sh
 
 ```bash
 
-nueva-clase comenzar    # Comienza la sesión de clase.
-nueva-clase finalizar   # Finaliza la sesión de clase
-nueva-clase configurar  # Configura el script.
-nueva-clase ayuda       # Muestra un menú con estos argumentos.
+./nueva-clase.sh comenzar    # Comienza la sesión de clase.
+./nueva-clase.sh finalizar   # Finaliza la sesión de clase
+./nueva-clase.sh configurar  # Configura el script.
+./nueva-clase.sh ayuda       # Muestra un menú con estos argumentos.
 ```
 
 ## TODO
