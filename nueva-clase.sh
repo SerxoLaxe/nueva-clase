@@ -1,32 +1,45 @@
 #!/bin/bash
 
+#                                                NUEVA-CLASE
+#Nueva Clase es un script escrito en Bash que automatiza algunos aspectos de las clases en remoto cursadas en Hack a Boss. 
+#Crea un repositorio local en el que almacena ordenadamente los archivos usados cada día, también se conecta a los meetings de Zoom
+#y, al finalizar la clase, sube a un repositorio remoto todo lo creado.
+
 #TODO
-#Almacenar en la configuración el estado del programa, para solo permitir la finalización despues de la inicialización ni permitir la configuración en mitad de una sesión
+#Guardar los archivos en un esquema de directorios dividido por meses.
 #Añadir el argumento de Verbose y definir que mensajes son debug y cuales necesita el usuario.
+#Automatizar totalmente el acceso a Zoom.
+#Cierre de VScode y Zoom al finalizar la sesión.
+#Aádir y eliminar tareas a Crontab desde el propio script.
+#Simplificar el método comenzar()
+
 
 #VARIABLES DATOS ALFANUMÉRICOS
+Version="0.1.0"                                  #Versión del script.
 Fecha=$(date +"%d-%b")
 Argumento=$1
-declare -a Dependencias=("zoom" "code" "git")
-defaultDir="./archivos-clase"
-defaultConfig="./.nueva-clase.conf"
-Commit="Nada que comentar"
+declare -a Dependencias=("zoom" "code" "git")    #Dependencias.
+defaultDir="./archivos-clase"                    #Directorio donde se guardarán los archivos generados por defecto.
+defaultConfig="./.nueva-clase.conf"              #Archivo de configuración por defecto.
+Commit="Nada que comentar"                       #Commit por defecto.
 EnSesion=false
 
 #VARIABLES GRÁFICAS
 Verde="32"
 Rojo="91"
-Cian="\e[96m"
-Magenta="\e[95m"
-Amarillo="\e[93m"
+Cian="\e[36m"
+Magenta="\e[35m"
+Amarillo="\e[33m"
 
 VerdeBold="\e[1;${Verde}m"
 RojoBold="\e[1;${Rojo}m"
 FinColor="\e[0m"
+
+#mensajes
 Correcto="$VerdeBold Correcto :) $FinColor" #Mensaje de debug correcto bold y en color verde.
 Error="$RojoBold Error :( $FinColor"        #Mensaje de debug error bold y en color rojo.
 
-checkArgumentos() {
+checkArgumentos() {   
 
     if [ "$Argumento" = "comenzar" ]; then
         comenzar
@@ -42,7 +55,7 @@ checkArgumentos() {
     fi
 }
 
-checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
+checkDependecias() { #Comprueba si las dependencias están instaladas
 
     local Apto=true
 
@@ -50,10 +63,10 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
         # check if command exists and fail otherwise
         command -v "$1" >/dev/null 2>&1
         if [[ $? -ne 0 ]]; then
-            echo -e "$1 no está instalado. $Error."
+            echo -e "$Error $1 no está instalado."
             Apto=false
         else
-            echo -e "$1 está instalado. $Correcto"
+            echo -e " $Correcto $1 está instalado."
         fi
 
     }
@@ -65,10 +78,9 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
     echo ""
 
     if $Apto; then
-        echo -e "Las dependencias están satisfechas. $Correcto "
-        echo ""
+        echo -e "$Correcto Las dependencias están satisfechas."
     else
-        echo -e "Las dependencias no están satisfechas. Instala las aplicaciones pertinentes  $Error"
+        echo -e "$Error Las dependencias no están satisfechas. Instala las aplicaciones pertinentes."
         echo ""
         exit
     fi
@@ -77,14 +89,14 @@ checkDependecias() { #Comprueba si Git, Zoom y VS Code están instalados
 checkExisteConfig() { #Función que comprueba si existe el archivo nueva-clase.conf.
 
     if [ -f "$defaultConfig" ]; then #Si ya existe el archivo de configuración, lo más común es que sea innecesario configurarlo.
-        echo -e "Encontrado archivo de configuración en el directorio actual. $Correcto"
+        echo -e "$Correcto Encontrado archivo de configuración en el directorio actual. "
         source $defaultConfig #Leemos el archivo de configuración que contiene las variables
 
     else
 
-        echo -e "No se ha encontrado archivo de configuración en el directorio local. $Error"
+        echo -e "$Error No se ha encontrado archivo de configuración en el directorio local."
         echo "Deseas crearlo ahora?"
-        read -p 'Escribe S para confirmar, escribe cualquier otra cosa para cancelar: ' respuesta
+        read -p 'Escribe S para confirmar, Introduce cualquier otra cosa para cancelar: ' respuesta
         echo ""
         if [ "$respuesta" == "S" ]; then
             modificarConfig
@@ -100,41 +112,45 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
     checkDirectorioClase() {
 
         if [ -z "$directorioClases" ]; then
-            echo -e "no existe un directorio para los archivos de clase registrado en el archivo de configuración. $Error"
-            echo "Para configurar/crear un directorio de clases nuevo, accede a la ayuda."
-            exit
+
+            echo -e "$Error No existe un directorio para los archivos de clase registrado en el archivo de configuración."
+            echo ""
+            #Usamos el método siguiente para que el ususario configure su archivo de clase.
+            escribirDirectorioClase
+
         #Si el directorio está registrado y existe, el script continua su función
         elif [ -d "$directorioClases" ]; then
-            echo -e "El directorio $directorioClases está configurado como archivo de clases. $Correcto "
+
+            echo -e "$Correcto El directorio $directorioClases está configurado como archivo de clases. "
+
         #Si nada de lo anterior se cumple, entonces pasa que el directorio registrado en la configuración ya no existe en la ruta especificada.
         else
-            echo -e "El directorio guardado en la configuración de este script ($directorioClases) ya no existe o ha sido modificado $Error"
-            echo "Para configurar/crear un directorio de clases nuevo, utiliza la ayuda"
-            exit
+            echo -e "$Error El directorio guardado en la configuración de este script ($directorioClases) ya no existe o ha sido modificado "
+            echo ""
+            #Usamos el método siguiente para que el ususario configure su archivo de clase.
+            escribirDirectorioClase
         fi
     }
 
     checkIdZoom() {
 
         if [ -z "$idZoom" ]; then
-            echo -e "no existe un id de Zoom registrado en el archivo de configuración.$Error"
-            echo "Para configurarlo accede a la ayuda."
-            exit
+            echo -e "$Error no existe un id de Zoom registrado en el archivo de configuración."
+            escribirIdZoom
         else
-            echo -e "El id de Zoom $idZoom está configurado como archivo de clases. $Correcto"
+            echo -e "$Correcto El id de Zoom $idZoom está configurado como meeting en el archivo de clases."
         fi
     }
 
     checkDatosGit() {
 
         if [ -z "$urlRemote" ]; then
-            echo -e "no existe una url de repositorio remoto registrada en el archivo de configuración. $Error"
-            echo "Para configurar una nueva url, accede a la ayuda."
+            echo -e "$Error No hay ningún repositorio remoto configurado."
             echo ""
-            exit
+            escribirDatosGit
 
         else
-            echo -e "La url "$urlRemote" está registrada en el archivo de configuración. $Correcto"
+            echo -e "$Correcto La url "$urlRemote" está registrada como repositorio remoto. "
             echo ""
         fi
     }
@@ -146,7 +162,7 @@ checkVarConfig() { #Esta función comprueba si las variables del archivo de conf
 
 }
 
-modificarConfig() { #Versión más modular y limpia
+modificarConfig() { #Función que modifica los contenidos del archivo de configuración.
 
     #Parámetros a introducir:
 
@@ -167,7 +183,7 @@ modificarConfig() { #Versión más modular y limpia
         if [ -d "$directorioClases" ]; then
             echo "El directorio introducido ya existe, estás seguro que deseas usarlo? su contenido podría ser borrado o modificado"
             echo ""
-            read -p 'Escribe S para confirmar o no escribas nada para cancelar: ' respuesta
+            read -p 'Escribe S para confirmar o introduce cualquier otra cosa para cancelar: ' respuesta
             echo ""
             if [ "$respuesta" == "S" ]; then
                 echo -e "directorioClases="$directorioClases"\n" >$defaultConfig
@@ -196,11 +212,13 @@ modificarConfig() { #Versión más modular y limpia
     escribirIdZoom() { #Pregunta por id para el meeting de Zoom.
 
         echo "Introduce el id del meeting de Zoom al que te deseas conectar al comenzar la sesión."
-        echo ""
+        echo "O introduce N para cancelar"
         read -p 'id: ' idZoom
         if [ ${#idZoom} -ne 11 ]; then
             echo "id no válido."
             escribirIdZoom
+        elif [ $idZoom -eq "N"]; then
+            exit
         else
             echo -e "idZoom="$idZoom"\n" >>$defaultConfig
         fi
@@ -213,8 +231,11 @@ modificarConfig() { #Versión más modular y limpia
 
         #Pregunta por los datos de acceso al remote.
         echo "introduce el enlace al repositorio remoto en donde desees almacenar tus archivos de clase"
-        echo ""
+        echo "O introduce N para cancelar"
         read -p 'url del repositorio: ' urlRemote
+        if [ $urlRemote -eq "N" ]; then
+            exit
+        fi
         echo ""
 
         git -C "$directorioClases" remote add origin "$urlRemote"
@@ -222,19 +243,19 @@ modificarConfig() { #Versión más modular y limpia
         echo -e "urlRemote="$urlRemote"\n" >>$defaultConfig #Escribimos variables en archivo de configuración.
     }
 
-    if [ -d "$defaultConfig" ]; then
-        echo "Ya existe un archivo de configuración, si se modifica será primero eliminado"
-        rm $defaultConfig
+    if [ ! -d "$defaultConfig" ]; then
+        echo "Archivo de configuración creado"
+        touch "$defaultConfig"
     fi
-    touch "$defaultConfig"
+
     escribirDirectorioClase
     escribirIdZoom
     escribirDatosGit
 
 }
 
-configurar() { #falta esto
-    echo "Configurar"
+configurar() { #Configura el script sin comenzar la sesión al terminar.
+    
     checkDependecias
     checkExisteConfig
     checkVarConfig
@@ -245,18 +266,18 @@ comenzar() { #Falta simplificar esta función
     #Comprueba dependencias y la configuración, para luego crear un directorio nombrado con la fecha actual y generar dentro de el un log y archivo de notas.
     #También abre esa carpeta en VS Code y se conecta al meeting de Zoom.
 
-    echo "Seleccionado comenzar."
-
     checkDependecias
     checkExisteConfig
 
-    #Comprobación de si el programa se encuentra en mitad de una sesión.
-    if [ $EnSesion == true]; then
-        echo " $Error Ya hay una sesión en curso, antes de comenzar otra usa el argumento finalizar para terminar la actual"
+    #Comprobación de si el script se intenta ejecutar en mitad de una sesión.
+    if [ $EnSesion == true ]; then
+        echo -e "$Error Ya hay una sesión en curso, antes de comenzar otra usa el argumento finalizar para terminar la actual"
+        echo ""
         exit
     fi
     EnSesion=true
-    echo "EnSesion=true" >>$defaultConfig
+    sed -i '/EnSesion/d' $defaultConfig   #borra la variable de config
+    echo "EnSesion=true" >>$defaultConfig #Introduce el nuevo valor
 
     checkVarConfig
 
@@ -295,7 +316,7 @@ comenzar() { #Falta simplificar esta función
 
 }
 
-finalizar() {
+finalizar() { #Finaliza la sesión guardando los archivos y subiéndolos al repositorio remoto.
 
     echo "Finalizar"
     checkDependecias
@@ -308,6 +329,8 @@ finalizar() {
         echo ""
         exit
     fi
+    sed -i '/EnSesion/d' $defaultConfig #borra la variable de config
+    echo "EnSesion=false" >>$defaultConfig
 
     if [ $clasesHoy -gt 0 ]; then #Escribe en el log la hora de finalización de la clase
 
@@ -315,9 +338,10 @@ finalizar() {
 
     else
 
-        echo -e "-La sesión $clasesHoy del $(date +"%d-%b") finalizó a las $(date +"%H:%M")\n" >>"$directorioClases/Clase.$Fecha/log.txt"
+        echo "-La sesión $clasesHoy del $(date +"%d-%b") finalizó a las $(date +"%H:%M")" >>"$directorioClases/Clase.$Fecha/log.txt"
     fi
 
+    #git add, commit y push automaticos.
     git -C "$directorioClases" add .
     git -C "$directorioClases" commit -m "$Commit"
     git -C "$directorioClases" push --set-upstream origin master
@@ -326,7 +350,7 @@ finalizar() {
 
 }
 
-ayuda() {
+ayuda() { #Muestra el nenú de ayuda
     echo "Herramienta de automatización de sesiones de enseñanza en remoto"
     echo ""
     echo "comenzar      -       Comienza la sesión crea una carpeta fechada, genera un archivo para tomar apuntes dentro de esta y un log."
@@ -337,19 +361,22 @@ ayuda() {
     echo ""
 }
 
-banner() {
+banner() { #Banner ASCII
 
-    echo -e "$Cian███╗   ██╗██╗   ██╗███████╗██╗   ██╗ █████╗      ██████╗██╗      █████╗ ███████╗███████╗$FinColor"
-    echo -e "$Magenta████╗  ██║██║   ██║██╔════╝██║   ██║██╔══██╗    ██╔════╝██║     ██╔══██╗██╔════╝██╔════╝$FinColor"
-    echo -e "$Amarillo██╔██╗ ██║██║   ██║█████╗  ██║   ██║███████║    ██║     ██║     ███████║███████╗█████╗$FinColor"
-    echo -e "$Magenta██║╚██╗██║██║   ██║██╔══╝  ╚██╗ ██╔╝██╔══██║    ██║     ██║     ██╔══██║╚════██║██╔══╝ $FinColor"
-    echo -e "$Cian██║ ╚████║╚██████╔╝███████╗ ╚████╔╝ ██║  ██║    ╚██████╗███████╗██║  ██║███████║███████╗$FinColor"
-    echo -e "$Amarillo╚═╝  ╚═══╝ ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝$FinColor"
+    echo -e "    $Amarillo███╗   ██╗██╗   ██╗███████╗██╗   ██╗ █████╗      ██████╗██╗      █████╗ ███████╗███████╗$FinColor"
+    echo -e "    $Amarillo████╗  ██║██║   ██║██╔════╝██║   ██║██╔══██╗    ██╔════╝██║     ██╔══██╗██╔════╝██╔════╝$FinColor"
+    echo -e "    $Amarillo██╔██╗ ██║██║   ██║█████╗  ██║   ██║███████║    ██║     ██║     ███████║███████╗█████╗$FinColor"
+    echo -e "    $Amarillo██║╚██╗██║██║   ██║██╔══╝  ╚██╗ ██╔╝██╔══██║    ██║     ██║     ██╔══██║╚════██║██╔══╝ $FinColor"
+    echo -e "    $Amarillo██║ ╚████║╚██████╔╝███████╗ ╚████╔╝ ██║  ██║    ╚██████╗███████╗██║  ██║███████║███████╗$FinColor"
+    echo -e "    $Cian ═╝  ╚═══╝ ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝     ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝$FinColor $VerdeBold V $Version $FinColor"
+    echo "              Herramienta de automatización de sesiones de enseñanza HAB en remoto"
+    echo ""
 }
 
 #-------------------------------------
 echo ""
 banner
 checkArgumentos
+echo ""
 exit
 #-------------------------------------
