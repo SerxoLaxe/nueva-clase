@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #                                                NUEVA-CLASE
-#Nueva Clase es un script escrito en Bash que automatiza algunos aspectos de las clases en remoto cursadas en Hack a Boss. 
+#Nueva Clase es un script escrito en Bash que automatiza algunos aspectos de las clases en remoto cursadas en Hack a Boss.
 #Crea un repositorio local en el que almacena ordenadamente los archivos usados cada día, también se conecta a los meetings de Zoom
 #y, al finalizar la clase, sube a un repositorio remoto todo lo creado.
 
@@ -13,15 +13,14 @@
 #Aádir y eliminar tareas a Crontab desde el propio script.
 #Simplificar el método comenzar()
 
-
 #VARIABLES DATOS ALFANUMÉRICOS
-Version="0.1.0"                                  #Versión del script.
+Version="0.1.0" #Versión del script.
 Fecha=$(date +"%d-%b")
 Argumento=$1
-declare -a Dependencias=("zoom" "code" "git")    #Dependencias.
-defaultDir="./archivos-clase"                    #Directorio donde se guardarán los archivos generados por defecto.
-defaultConfig="./.nueva-clase.conf"              #Archivo de configuración por defecto.
-Commit="Nada que comentar"                       #Commit por defecto.
+declare -a Dependencias=("zoom" "code" "git") #Dependencias.
+defaultDir="./archivos-clase"                 #Directorio donde se guardarán los archivos generados por defecto.
+defaultConfig="./.nueva-clase.conf"           #Archivo de configuración por defecto.
+Commit="Nada que comentar"                    #Commit por defecto.
 EnSesion=false
 
 #VARIABLES GRÁFICAS
@@ -39,7 +38,7 @@ FinColor="\e[0m"
 Correcto="$VerdeBold Correcto :) $FinColor" #Mensaje de debug correcto bold y en color verde.
 Error="$RojoBold Error :( $FinColor"        #Mensaje de debug error bold y en color rojo.
 
-checkArgumentos() {   
+checkArgumentos() {
 
     if [ "$Argumento" = "comenzar" ]; then
         comenzar
@@ -255,7 +254,7 @@ modificarConfig() { #Función que modifica los contenidos del archivo de configu
 }
 
 configurar() { #Configura el script sin comenzar la sesión al terminar.
-    
+
     checkDependecias
     checkExisteConfig
     checkVarConfig
@@ -277,7 +276,7 @@ comenzar() { #Falta simplificar esta función
     fi
     EnSesion=true
     sed -i '/EnSesion/d' $defaultConfig   #borra la variable de config
-    echo "EnSesion=true" >>$defaultConfig #Introduce el nuevo valor
+    echo "EnSesion=true" >> $defaultConfig #Introduce el nuevo valor
 
     checkVarConfig
 
@@ -291,9 +290,9 @@ comenzar() { #Falta simplificar esta función
         touch "$directorioClases/Clase.$Fecha/log.txt"
         echo -e "La sesión "$clasesHoy" comenzó a las $(date +"%H:%M") del $(date +"%d-%b").\n" >"$directorioClases/Clase.$Fecha/log.txt"
 
-        #!!!!!!        #S code "$directorioClases/Clase.$Fecha"
+        code "$directorioClases/Clase.$Fecha"  #Abre VS Code
 
-        #!!!!!!        # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+        xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
 
     else
         echo "Ya existe un archivo para hoy, estas seguro de que quieres realizar otra sesión?"
@@ -308,9 +307,9 @@ comenzar() { #Falta simplificar esta función
             touch "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
             echo "-La sesión "$clasesHoy" del $(date +"%d-%b") comenzó a las $(date +"%H:%M")." >>"$directorioClases/Clase.$Fecha.Sesion.$clasesHoy/log.txt"
 
-            #!!!!!!            # code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy"
+            code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy" #Abre VS Code
 
-            #!!!!!!            # xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+            xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
         fi
     fi
 

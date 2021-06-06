@@ -1,6 +1,6 @@
 # NUEVA-CLASE
 
-Nueva Clase es un script escrito en Bash que automatiza algunos aspectos de las clases en remoto cursadas en Hack a Boss. Crea un repositorio local en el que almacena ordenadamente los archivos usados cada día, también se conecta a los meetings de Zoom y, al finalizar la clase, sube a un repositorio remoto todo lo creado.
+Nueva Clase es un script escrito en Bash que automatiza algunos aspectos de las clases en remoto cursadas en Hack a Boss. Crea un repositorio local en el que almacena ordenadamente los archivos usados cada día, se conecta a los meetings de Zoom, abre una nurva carpeta con archivo de notas y log en VS Code y, al finalizar la clase, sube a un repositorio remoto todo lo creado.
 
 ![imagen](imagen.png)
 
