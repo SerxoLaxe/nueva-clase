@@ -12,7 +12,7 @@ Clona este repositorio para instalar nueva-clase.
 git clone url
 cd nueva-clase
 chmod +x nueva-clase.sh
-./nueva-clase configurar
+./nueva-clase.sh  configurar
 
 ```
 
