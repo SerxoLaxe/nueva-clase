@@ -17,7 +17,7 @@
 Version="0.1.0" #Versión del script.
 Fecha=$(date +"%d-%b")
 Argumento=$1
-declare -a Dependencias=("zoom" "code" "git") #Dependencias.
+declare -a Dependencias=("zoom" "code" "git" "python3") #Dependencias.
 defaultDir="./archivos-clase"                 #Directorio donde se guardarán los archivos generados por defecto.
 defaultConfig="./.nueva-clase.conf"           #Archivo de configuración por defecto.
 Commit="Nada que comentar"                    #Commit por defecto.
@@ -276,7 +276,7 @@ comenzar() { #Falta simplificar esta función
     fi
     EnSesion=true
     sed -i '/EnSesion/d' $defaultConfig   #borra la variable de config
-    echo "EnSesion=true" >> $defaultConfig #Introduce el nuevo valor
+    echo "EnSesion=true" >>$defaultConfig #Introduce el nuevo valor
 
     checkVarConfig
 
@@ -290,9 +290,14 @@ comenzar() { #Falta simplificar esta función
         touch "$directorioClases/Clase.$Fecha/log.txt"
         echo -e "La sesión "$clasesHoy" comenzó a las $(date +"%H:%M") del $(date +"%d-%b").\n" >"$directorioClases/Clase.$Fecha/log.txt"
 
-        code "$directorioClases/Clase.$Fecha"  #Abre VS Code
+        code "$directorioClases/Clase.$Fecha" #Abre VS Code
 
-        xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+        #xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+
+        #Nuevo método totalmente automático con python
+        cd botZoom
+        source .venv/bin/activate
+        python3 main.py
 
     else
         echo "Ya existe un archivo para hoy, estas seguro de que quieres realizar otra sesión?"
@@ -309,7 +314,12 @@ comenzar() { #Falta simplificar esta función
 
             code "$directorioClases/Clase.$Fecha.Sesion.$clasesHoy" #Abre VS Code
 
-            xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+            #xdg-open "https://zoom.us/j/"$idZoom"" #Abre Zoom
+
+            #Nuevo método totalmente automático con python
+            cd botZoom
+            source .venv/bin/activate
+            python3 main.py
         fi
     fi
 
